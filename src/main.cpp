@@ -21,14 +21,26 @@ void setup()
   while (!Serial);
 
   Serial.println("Starting...");
-  Wire.begin();
+  Wire.begin(2, 14);
 
   i2c.attach(Wire);
   Serial.println("Inited I2C bus, starting scan...");
   i2c.scan();
 
-  i2c.led_set(1, 1, 1, 1);
-  i2c.led_set(2, 1, 1, 1);
+  i2c.selectChannel(0);
+  for (uint8_t ch = 0; ch < 4; ch++) { 
+    i2c.selectChannel(ch);
+    for (uint8_t i = 0; i < 8; i++) { 
+      i2c.configure_port(i);
+    }
+  }
+
+  for (uint8_t ch = 0; ch < 4; ch++) { 
+    i2c.selectChannel(ch);
+    for (uint8_t i = 0; i < 8; i++) { 
+      i2c.led_set(i, 0, 1, 0);
+    }
+  }
 
   // wifi.connect();
   // SocketIO.connect();

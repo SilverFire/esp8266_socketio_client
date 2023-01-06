@@ -17,6 +17,7 @@ class I2C
         void led_set(uint8_t number, uint8_t red, uint8_t green, uint8_t blue);
 
         uint8_t selectChannel(uint8_t channel);
+        void configure_port(uint8_t number);
     private:
         TwoWire *wire;
 
@@ -29,7 +30,6 @@ class I2C
         uint8_t i2c_hub_addr = 0x70;
 
         uint8_t getAddress(const bool A0, const bool A1, const bool A2);
-        void configure_port(uint8_t number);
         // todo: terminator
 
 };

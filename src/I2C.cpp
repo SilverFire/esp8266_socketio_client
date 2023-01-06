@@ -9,7 +9,6 @@ I2C::I2C()
 void I2C::attach(TwoWire &wire)
 {
     this->wire = &wire;
-    this->selectChannel(0);
 }
 
 uint8_t I2C::getAddress(const bool A0, const bool A1, const bool A2)
@@ -52,7 +51,16 @@ void I2C::write(uint8_t address, uint8_t reg, uint8_t data)
     wire->beginTransmission(address);
     wire->write(reg);
     wire->write(data);
-    wire->endTransmission();
+    uint8_t result = wire->endTransmission();
+
+    Serial.print("Writing to address ");
+    Serial.print(address);
+    Serial.print(" register ");
+    Serial.print(reg);
+    Serial.print(" data ");
+    Serial.print(data);
+    Serial.print(" result: ");
+    Serial.println(result);
 }
 
 uint8_t I2C::read(uint8_t address, uint8_t reg)
@@ -102,48 +110,39 @@ uint8_t I2C::read_button_state(uint8_t number)
     return data & 0b00000001;
 }
 
+void reportScanResult(uint8_t address, uint8_t error, const char* message)
+{
+    Serial.print(message);
+    Serial.print(" 0x");
+    if (address < 16) {
+        Serial.print("0");
+    }
+    Serial.print(address, HEX);
+    Serial.print(" (code ");
+    Serial.print(error);
+    Serial.println(")");
+}
+
 void I2C::scan()
 {
-    this->selectChannel(0);
-    this->configure_port(0);
-    // this->configure_port(1);
-    // this->configure_port(2);
-
-    Serial.println("Scanning I2C bus...");
-    for (uint8_t address = 1; address < 127; address++)
+    for (uint8_t channel = 0; channel < 3; channel++)
     {
-        wire->beginTransmission(address);
-        uint8_t error = wire->endTransmission();
-        if (error == 0)
+        this->selectChannel(channel);
+        this->configure_port(0);
+
+        Serial.println("Scanning I2C bus on channel " + String(channel));
+        for (uint8_t address = 1; address < 127; address++)
         {
-            Serial.print("Found device at address 0x");
-            if (address < 16)
-            {
-                Serial.print("0");
+            wire->beginTransmission(address);
+            uint8_t error = wire->endTransmission();
+            
+            if (error == 0) {
+                reportScanResult(address, error, "Found device at address");
+            } else if (error == 4) {
+                reportScanResult(address, error, "Unknown error at address");
             }
-            Serial.println(address, HEX);
         }
-        else if (error == 4)
-        {
-            Serial.print("Unknown error at address 0x");
-            if (address < 16)
-            {
-                Serial.print("0");
-            }
-            Serial.println(address, HEX);
-        }
-        else if (error == 2)
-        {
-            Serial.print("received NACK on transmit of address 0x");
-            Serial.println(address, HEX);
-        }
-        else
-        {
-            // Report to Serial that unknown error occured with address
-            Serial.print("Some other error at address 0x");
-            Serial.print(address, HEX);
-            Serial.print(", error code: ");
-            Serial.println(error);
-        }
+        Serial.println("Done.");
+        Serial.println();
     }
 }
